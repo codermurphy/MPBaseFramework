@@ -7,7 +7,7 @@
 
 import UIKit
 
-class MPImagePickerTitleView: UIControl {
+class MPAssetsPickerTitleView: UIControl {
 
     //MARK: - initial
     init(title: String?) {
@@ -108,11 +108,11 @@ class MPImagePickerTitleView: UIControl {
         containerView.widthAnchor.constraint(lessThanOrEqualToConstant: 200).isActive = true
         
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor,constant: 14).isActive = true
+        titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor,constant: 7).isActive = true
         titleLabel.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
         
         arrowView.translatesAutoresizingMaskIntoConstraints = false
-        arrowView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor,constant: -14).isActive = true
+        arrowView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor,constant: -5).isActive = true
         arrowView.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor,constant: 5).isActive = true
         arrowView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
         arrowView.widthAnchor.constraint(equalToConstant: arrowView.intrinsicContentSize.width).isActive = true

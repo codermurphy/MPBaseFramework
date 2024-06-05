@@ -7,7 +7,7 @@
 
 import UIKit
 
-class MPImagePickerFlagView: UIView,MPImagePickerSelectedFlagProtocol {
+class MPAssetsPickerFlagView: UIView,MPAssetsPickerSelectedFlagProtocol {
     
     
 

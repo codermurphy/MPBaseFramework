@@ -5,7 +5,7 @@
 //  Created by ogawa on 2024/4/20.
 //
 
-import Foundation
+import UIKit
 import Photos
 
 extension UICollectionView {

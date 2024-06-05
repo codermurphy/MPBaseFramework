@@ -1,5 +1,5 @@
 //
-//  MPImagePickerController.swift
+//  MPAssetsPickerController.swift
 //  BasicProject
 //
 //  Created by ogawa on 2022/1/11.
@@ -11,7 +11,7 @@ import PhotosUI
 
 
 
-public class MPImagePickerController: UIViewController {
+public class MPAssetsPickerController: UIViewController {
 
     
     
@@ -30,8 +30,8 @@ public class MPImagePickerController: UIViewController {
         
     }
     
-    private var titleView: MPImagePickerTitleView? {
-        return self.navigationItem.titleView as? MPImagePickerTitleView
+    private var titleView: MPAssetsPickerTitleView? {
+        return self.navigationItem.titleView as? MPAssetsPickerTitleView
     }
     
     private weak var albumPicker: MPAlbumsPickerView?
@@ -64,7 +64,7 @@ public class MPImagePickerController: UIViewController {
     //MARK: - initial
     
     public static func presentImagePicker() -> UINavigationController {
-        let picker = MPImagePickerController()
+        let picker = MPAssetsPickerController()
         let nav = MPAssetsNavigationController(rootViewController: picker)
         nav.modalPresentationStyle = .fullScreen
         return nav
@@ -176,7 +176,7 @@ public class MPImagePickerController: UIViewController {
         
         if let first = imageManager.allAlbums.first {
             if self.titleView == nil {
-                let titleView = MPImagePickerTitleView(title: first.localizedTitle)
+                let titleView = MPAssetsPickerTitleView(title: first.localizedTitle)
                 titleView.addTarget(self, action: #selector(self.titleViewClickedHandler(titleView:)), for: .touchUpInside)
                 self.navigationItem.titleView = titleView
             }
@@ -257,7 +257,7 @@ public class MPImagePickerController: UIViewController {
         }
     }
     
-    @objc private func titleViewClickedHandler(titleView: MPImagePickerTitleView) {
+    @objc private func titleViewClickedHandler(titleView: MPAssetsPickerTitleView) {
         titleView.isSelected.toggle()
         if titleView.isSelected {
             if !self.imageManager.allAlbums.isEmpty {
@@ -349,7 +349,10 @@ public class MPImagePickerController: UIViewController {
         
         result.dataSource = self
         result.delegate = self
-        result.register(MPImagePickerCell.self, forCellWithReuseIdentifier: "MPImagePickerCell-identifier")
+        result.register(UICollectionViewCell.self, forCellWithReuseIdentifier: UICollectionViewCell.description())
+        result.register(MPAssetsPickerImageCell.self, forCellWithReuseIdentifier: MPAssetsPickerImageCell.description())
+        result.register(MPAssetsPickerLivePhotoCell.self, forCellWithReuseIdentifier: MPAssetsPickerLivePhotoCell.description())
+        result.register(MPAssetsPickerVideoCell.self, forCellWithReuseIdentifier: MPAssetsPickerVideoCell.description())
         
         return result
         
@@ -386,49 +389,85 @@ public class MPImagePickerController: UIViewController {
 }
 
 // MARK: CollectionView datasource
-extension MPImagePickerController: UICollectionViewDataSource {
+extension MPAssetsPickerController: UICollectionViewDataSource {
     
     public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return self.imageManager.currenFetchtAssetsResult?.count ?? 0
     }
     
     public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MPImagePickerCell-identifier", for: indexPath) as! MPImagePickerCell
         
-        cell.delegate = self
-
-        cell.imageManger = imageManager
-
-        if let asset = imageManager.currenFetchtAssetsResult?.object(at: indexPath.item) {
-            cell.asset = asset
-            if let index = selectedIndex[asset.localIdentifier] {
-                cell.setSelectedFlag(index: index, selected: true)
-            }
-            else {
-                cell.setSelectedFlag(index: 0, selected: false)
-            }
+        let emptyCell = collectionView.dequeueReusableCell(withReuseIdentifier: UICollectionViewCell.description(), for: indexPath)
+        guard let asset = imageManager.currenFetchtAssetsResult?.object(at: indexPath.item) else {
+            
+            return emptyCell
         }
         
-        if let lastDetailIndexPath = self.lastDetailIndexPath,let preview = self.presentedViewController as? MPAssetsPreviewController  {
+        var cellType: MPAssetsPickerCellType = .image
+        
+        switch asset.mediaType {
+            
+        case .unknown:
+            return emptyCell
+        case .image:
+            switch asset.mediaSubtypes {
+            case .photoLive:
+                cellType = .live
+            default:
+                cellType = .image
+            }
+        case .video:
+            cellType = .video
+        case .audio:
+            return emptyCell
+        @unknown default:
+            return emptyCell
+        }
+        
+        var result: MPAssetsPickerCellBaseProtocol!
+        
+        switch cellType {
+        case .image:
+            result = collectionView.dequeueReusableCell(withReuseIdentifier: MPAssetsPickerImageCell.description(), for: indexPath) as! MPAssetsPickerImageCell
+        case .live:
+            result = collectionView.dequeueReusableCell(withReuseIdentifier: MPAssetsPickerLivePhotoCell.description(), for: indexPath) as! MPAssetsPickerLivePhotoCell
+        case .video:
+            result = collectionView.dequeueReusableCell(withReuseIdentifier: MPAssetsPickerVideoCell.description(), for: indexPath) as! MPAssetsPickerVideoCell
+        }
+        
+        result.cellType = cellType
+        
+        result.delegate = self
+
+        result.imageManger = imageManager
+        
+        result.asset = asset
+        if let index = selectedIndex[asset.localIdentifier] {
+            result?.setSelectedFlag(index: index, selected: true)
+        }
+        else {
+            result?.setSelectedFlag(index: 0, selected: false)
+        }
+
+        
+        if let lastDetailIndexPath = self.lastDetailIndexPath,
+           let preview = self.presentedViewController as? MPAssetsPreviewController  {
             if lastDetailIndexPath == indexPath {
-                preview.updateSourceView(view: cell.imageView)
+                preview.updateSourceView(view: result.imageView)
                 self.lastDetailIndexPath = nil
             }
         }
         
-        
-
-        return cell
+        return result
     }
 }
 
 //MARK: - CollectionView delgate
 
-extension MPImagePickerController:UICollectionViewDelegateFlowLayout {
+extension MPAssetsPickerController:UICollectionViewDelegateFlowLayout {
     
     public func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
-        guard let cell = cell as? MPImagePickerCell else { return }
+        guard let cell = cell as? MPAssetsPickerCellBaseProtocol else { return }
         if isViewLoaded && view.window != nil {
             if let asset = imageManager.currenFetchtAssetsResult?.object(at: indexPath.item) {
                 cell.imageRequestID = imageManager.requestImage(asset: asset) { [weak cell] asset, image,isDegraded in
@@ -444,12 +483,12 @@ extension MPImagePickerController:UICollectionViewDelegateFlowLayout {
     
     public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: false)
-        guard let cell = collectionView.cellForItem(at: indexPath) as? MPImagePickerCell else { return }
+        guard let cell = collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol else { return }
         guard let nonilAssets = self.imageManager.currenFetchtAssetsResult else { return }
         let preview = MPAssetsPreviewController(souceView: cell.imageView,
                                                 assets: nonilAssets,
                                                 currentIndex: indexPath.row) { [weak self] indexPath in
-            if let cell = self?.collectionView.cellForItem(at: indexPath) as? MPImagePickerCell {
+            if let cell = self?.collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol {
                 self?.lastDetailIndexPath = nil
                 return cell.imageView
             }
@@ -485,7 +524,7 @@ extension MPImagePickerController:UICollectionViewDelegateFlowLayout {
 
 
 //MARK: - MPImagePickerCellDelegate
-extension MPImagePickerController: MPImagePickerCellDelegate {
+extension MPAssetsPickerController: MPAssetsPickerCellDelegate {
     
     public func cellDidSelected(cell: UICollectionViewCell) -> (Int,Bool) {
         guard let indexPath = self.collectionView.indexPath(for: cell) else { return (0,false)}

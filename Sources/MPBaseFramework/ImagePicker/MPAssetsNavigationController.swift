@@ -12,12 +12,11 @@ class MPAssetsNavigationController: UINavigationController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-       delegate = self
+        delegate = self
     }
     
     private var percentageTransition :MPPreviewInteractiveTransition?
     
-
 
 }
 
