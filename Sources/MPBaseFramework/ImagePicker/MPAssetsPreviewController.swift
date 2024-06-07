@@ -54,13 +54,13 @@ public class MPAssetsPreviewController: MPImagePreviewController {
     
     
     // MARK: initial
-    public init(souceView: UIImageView,assets: PHFetchResult<PHAsset>,currentIndex: Int,pageChangeHanlder: ((IndexPath) -> UIImageView?)? = nil) {
+    public init(souceView: UIImageView,assets: PHFetchResult<PHAsset>,currentIndex: Int,pageChangeHandle: ((IndexPath) -> UIView?)? = nil) {
         self.imageAssets = assets
         super.init(nibName: nil, bundle: nil)
         self.previewType = .assets
         self.modalPresentationStyle = .currentContext
         self.sourceView = souceView
-        self.pageChangeHanlder = pageChangeHanlder
+        self.pageChangeHandle = pageChangeHandle
         self.currentIndex = currentIndex
         
     }
@@ -85,9 +85,10 @@ public class MPAssetsPreviewController: MPImagePreviewController {
     }
     
     public override func viewWillAppear(_ animated: Bool) {
-        self.navigationController?.setNavigationBarHidden(true, animated: animated)
 
         super.viewWillAppear(animated)
+        self.navigationController?.setNavigationBarHidden(true, animated: animated)
+
         isHideStatusBar = true
         
         self.setNeedsStatusBarAppearanceUpdate()
@@ -98,7 +99,9 @@ public class MPAssetsPreviewController: MPImagePreviewController {
     public override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         self.navigationController?.setNavigationBarHidden(false, animated: animated)
+        
     }
+    
     
     // MARK: caching image
     
@@ -139,11 +142,6 @@ public class MPAssetsPreviewController: MPImagePreviewController {
         
     }
     
-    public func updateSourceView(view: UIImageView) {
-        self.sourceView = view
-        view.alpha = 0
-    }
-
 }
 
 // MARK: UICollection dataSource
@@ -186,16 +184,8 @@ extension MPAssetsPreviewController {
                 countLabel.text = "\(index + 1)/\(imageAssets.count)"
                 currentIndex = index
                 self.cachingImamges(currentIndex: currentIndex)
-                if let view = pageChangeHanlder?(IndexPath(item: currentIndex, section: 0)) {
-//                    sourceView?.isHidden = false
-                    sourceView?.alpha = 1
-                    sourceView = view
-                    sourceView?.alpha = 0
-//                    sourceView?.isHidden = true
-                }
-                else {
-                    sourceView?.alpha = 1
-                }
+                guard let newSourceView = pageChangeHandle?(IndexPath(item: currentIndex, section: 0)) as? UIImageView else { return }
+                self.updateSourceView(view: newSourceView)
             }
         }
     }

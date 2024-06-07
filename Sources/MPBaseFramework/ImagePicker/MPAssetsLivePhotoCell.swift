@@ -1,5 +1,5 @@
 //
-//  MPAssetsPickerLivePhotoCell.swift
+//  MPAssetsLivePhotoCell.swift
 //  
 //
 //  Created by ogawa on 2024/6/4.
@@ -7,7 +7,7 @@
 
 import UIKit
 
-class MPAssetsPickerLivePhotoCell: MPAssetsPickerImageCell,MPAssetsPickerLivePhotoCellProtocol {
+class MPAssetsLivePhotoCell: MPAssetsImageCell,MPAssetsPickerLivePhotoCellProtocol {
     
     override init(frame: CGRect) {
         super.init(frame: frame)

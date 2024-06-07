@@ -36,19 +36,12 @@ public class MPAssetsPickerController: UIViewController {
     
     private weak var albumPicker: MPAlbumsPickerView?
         
-    /// 每行显示数量
-    private let perRowCount: Int = 3
     
     /// 被选中的indexPath
     private var selectedIndex: [String: Int] = [String: Int]()
     
-    /// 最多可选中数量
-    private var maxSelectedCount:Int = 9
-    
-    private var lastDetailIndexPath: IndexPath?
-    
-    private var previewController: MPAssetsPreviewController?
-    
+    public var lastDetailIndexPath: IndexPath?
+        
     private var screenScale: CGFloat {
         if let screen = self.view.window?.windowScene?.screen  {
             return screen.scale
@@ -184,8 +177,8 @@ public class MPAssetsPickerController: UIViewController {
     }
     
     private func updateItemSizez(size: CGSize) {
-        let validWidth = size.width - self.flowLayout.sectionInset.left - self.flowLayout.sectionInset.right - CGFloat(perRowCount - 1) * self.flowLayout.minimumInteritemSpacing
-        let avgWidth =  validWidth / CGFloat(perRowCount)
+        let validWidth = size.width - self.flowLayout.sectionInset.left - self.flowLayout.sectionInset.right - CGFloat(MPAssetsUIConfig.share.rowCount - 1) * self.flowLayout.minimumInteritemSpacing
+        let avgWidth =  validWidth / CGFloat(MPAssetsUIConfig.share.rowCount)
         self.flowLayout.itemSize = CGSize(width: avgWidth, height: avgWidth)
     }
     
@@ -289,7 +282,7 @@ public class MPAssetsPickerController: UIViewController {
     /// - Parameter indexPath: indexpath
     /// - Returns: int 当前选中数量，bool 是否选中
     private func selectedIndexPath(_ indexPath: IndexPath) -> (Int,Bool) {
-        guard selectedIndex.count < maxSelectedCount else {return (0,false)}
+        guard selectedIndex.count < MPAssetsUIConfig.share.maxSelectCount else {return (0,false)}
         guard let asset = imageManager.currenFetchtAssetsResult?[indexPath.row] else { return (0,false) }
         guard !selectedIndex.keys.contains(asset.localIdentifier) else {return (0,false)}
         let count = selectedIndex.count + 1
@@ -350,9 +343,12 @@ public class MPAssetsPickerController: UIViewController {
         result.dataSource = self
         result.delegate = self
         result.register(UICollectionViewCell.self, forCellWithReuseIdentifier: UICollectionViewCell.description())
-        result.register(MPAssetsPickerImageCell.self, forCellWithReuseIdentifier: MPAssetsPickerImageCell.description())
-        result.register(MPAssetsPickerLivePhotoCell.self, forCellWithReuseIdentifier: MPAssetsPickerLivePhotoCell.description())
-        result.register(MPAssetsPickerVideoCell.self, forCellWithReuseIdentifier: MPAssetsPickerVideoCell.description())
+        result.register(MPAssetsUIConfig.share.imageCellType.self,
+                        forCellWithReuseIdentifier: MPAssetsUIConfig.share.imageCellType.description())
+        result.register(MPAssetsUIConfig.share.livePhotoCellType.self,
+                        forCellWithReuseIdentifier: MPAssetsUIConfig.share.livePhotoCellType.description())
+        result.register(MPAssetsUIConfig.share.videoCellType.self,
+                        forCellWithReuseIdentifier: MPAssetsUIConfig.share.videoCellType.description())
         
         return result
         
@@ -376,8 +372,8 @@ public class MPAssetsPickerController: UIViewController {
     //MARK: - override methods
     public override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
-        let validWidth = size.width - self.flowLayout.sectionInset.left - self.flowLayout.sectionInset.right - CGFloat(perRowCount - 1) * self.flowLayout.minimumInteritemSpacing
-        let avgWidth = validWidth / CGFloat(perRowCount)
+        let validWidth = size.width - self.flowLayout.sectionInset.left - self.flowLayout.sectionInset.right - CGFloat(MPAssetsUIConfig.share.rowCount - 1) * self.flowLayout.minimumInteritemSpacing
+        let avgWidth = validWidth / CGFloat(MPAssetsUIConfig.share.rowCount)
         self.flowLayout.itemSize = CGSize(width: avgWidth, height: avgWidth)
         self.flowLayout.invalidateLayout()
     }
@@ -428,11 +424,11 @@ extension MPAssetsPickerController: UICollectionViewDataSource {
         
         switch cellType {
         case .image:
-            result = collectionView.dequeueReusableCell(withReuseIdentifier: MPAssetsPickerImageCell.description(), for: indexPath) as! MPAssetsPickerImageCell
+            result = collectionView.dequeueReusableCell(withReuseIdentifier: MPAssetsImageCell.description(), for: indexPath) as! MPAssetsImageCell
         case .live:
-            result = collectionView.dequeueReusableCell(withReuseIdentifier: MPAssetsPickerLivePhotoCell.description(), for: indexPath) as! MPAssetsPickerLivePhotoCell
+            result = collectionView.dequeueReusableCell(withReuseIdentifier: MPAssetsLivePhotoCell.description(), for: indexPath) as! MPAssetsLivePhotoCell
         case .video:
-            result = collectionView.dequeueReusableCell(withReuseIdentifier: MPAssetsPickerVideoCell.description(), for: indexPath) as! MPAssetsPickerVideoCell
+            result = collectionView.dequeueReusableCell(withReuseIdentifier: MPAssetsVideoCell.description(), for: indexPath) as! MPAssetsVideoCell
         }
         
         result.cellType = cellType
@@ -441,6 +437,7 @@ extension MPAssetsPickerController: UICollectionViewDataSource {
 
         result.imageManger = imageManager
         
+        result.isSingleChoise = MPAssetsUIConfig.share.isSingleChoise
         result.asset = asset
         if let index = selectedIndex[asset.localIdentifier] {
             result?.setSelectedFlag(index: index, selected: true)
@@ -448,16 +445,6 @@ extension MPAssetsPickerController: UICollectionViewDataSource {
         else {
             result?.setSelectedFlag(index: 0, selected: false)
         }
-
-        
-        if let lastDetailIndexPath = self.lastDetailIndexPath,
-           let preview = self.presentedViewController as? MPAssetsPreviewController  {
-            if lastDetailIndexPath == indexPath {
-                preview.updateSourceView(view: result.imageView)
-                self.lastDetailIndexPath = nil
-            }
-        }
-        
         return result
     }
 }
@@ -468,13 +455,15 @@ extension MPAssetsPickerController:UICollectionViewDelegateFlowLayout {
     
     public func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         guard let cell = cell as? MPAssetsPickerCellBaseProtocol else { return }
-        if isViewLoaded && view.window != nil {
-            if let asset = imageManager.currenFetchtAssetsResult?.object(at: indexPath.item) {
-                cell.imageRequestID = imageManager.requestImage(asset: asset) { [weak cell] asset, image,isDegraded in
-                    if let image,let cellAssetsIdentifier = cell?.asset?.localIdentifier,asset.localIdentifier == cellAssetsIdentifier {
-                        cell?.imageView.image = image
-                        cell?.isDegraded = isDegraded
-                    }
+//        if isViewLoaded && view.window != nil {
+//
+//        }
+        
+        if let asset = imageManager.currenFetchtAssetsResult?.object(at: indexPath.item) {
+            cell.imageRequestID = imageManager.requestImage(asset: asset) { [weak cell] asset, image,isDegraded in
+                if let image,let cellAssetsIdentifier = cell?.asset?.localIdentifier,asset.localIdentifier == cellAssetsIdentifier {
+                    cell?.imageView.image = image
+                    cell?.isDegraded = isDegraded
                 }
             }
         }
@@ -485,24 +474,29 @@ extension MPAssetsPickerController:UICollectionViewDelegateFlowLayout {
         collectionView.deselectItem(at: indexPath, animated: false)
         guard let cell = collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol else { return }
         guard let nonilAssets = self.imageManager.currenFetchtAssetsResult else { return }
-        let preview = MPAssetsPreviewController(souceView: cell.imageView,
+        let preView = MPAssetsPreviewController(souceView: cell.imageView,
                                                 assets: nonilAssets,
                                                 currentIndex: indexPath.row) { [weak self] indexPath in
+
+
+
+            
             if let cell = self?.collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol {
                 self?.lastDetailIndexPath = nil
                 return cell.imageView
             }
             else {
-                collectionView.scrollToItem(at: indexPath, at: .centeredVertically, animated: false)
-
                 self?.lastDetailIndexPath = indexPath
-                return nil
+
+                self?.collectionView.scrollToItem(at: indexPath, at: .centeredVertically, animated: false)
+                self?.collectionView.reloadItems(at: [indexPath])
+                let cell = self?.collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol
+                return  cell?.imageView ?? nil
             }
            
         }
-        
-        self.navigationController?.pushViewController(preview, animated: true)
-//        self.present(preview, animated: true, completion: nil)
+        self.navigationController?.pushViewController(preView, animated: true)
+
 
     }
     

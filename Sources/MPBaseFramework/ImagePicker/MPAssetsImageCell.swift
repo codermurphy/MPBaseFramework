@@ -1,5 +1,5 @@
 //
-//  MPAssetsPickerImageCell.swift
+//  MPAssetsImageCell.swift
 //  
 //
 //  Created by ogawa on 2024/6/4.
@@ -9,7 +9,7 @@ import UIKit
 import Photos
 
 
-class MPAssetsPickerImageCell: UICollectionViewCell,MPAssetsPickerImageCellProtocol {
+class MPAssetsImageCell: UICollectionViewCell,MPAssetsPickerImageCellProtocol {
     
     
     var asset: PHAsset?
@@ -23,6 +23,12 @@ class MPAssetsPickerImageCell: UICollectionViewCell,MPAssetsPickerImageCellProto
     var isDegraded: Bool = false
     
     var cellType: MPAssetsPickerCellType = .image
+    
+    var isSingleChoise: Bool = false {
+        didSet {
+            flagView.isHidden = isSingleChoise
+        }
+    }
     
     weak var imageManger: MPAssetsManager?
     
@@ -77,6 +83,7 @@ class MPAssetsPickerImageCell: UICollectionViewCell,MPAssetsPickerImageCellProto
         imageRequestID = PHInvalidImageRequestID
         imageView.image = nil
         setSelectedFlag(index: 0,selected: false)
+        self.contentView.isHidden = false
     }
 
     
@@ -111,7 +118,7 @@ class MPAssetsPickerImageCell: UICollectionViewCell,MPAssetsPickerImageCellProto
     }
 }
 
-extension MPAssetsPickerImageCell: UIGestureRecognizerDelegate {
+extension MPAssetsImageCell: UIGestureRecognizerDelegate {
     
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         

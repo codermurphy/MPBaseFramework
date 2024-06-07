@@ -52,6 +52,8 @@ public class MPPreviewInteractiveTransition: UIPercentDrivenInteractiveTransitio
             toController?.setNeedsStatusBarAppearanceUpdate()
             
             if toController?.navigationController != nil {
+                toController?.navigationController?.modalPresentationCapturesStatusBarAppearance = false
+                toController?.navigationController?.setNeedsStatusBarAppearanceUpdate()
                 if let superview = toController?.view.superview,let fromController = self.fromController {
                     
                     superview.addSubview(fromController.view)
@@ -70,7 +72,11 @@ public class MPPreviewInteractiveTransition: UIPercentDrivenInteractiveTransitio
             
             
         case .cancelled,.failed:
+            toController?.modalPresentationCapturesStatusBarAppearance = true
+            toController?.setNeedsStatusBarAppearanceUpdate()
             if toController?.navigationController != nil {
+                toController?.navigationController?.modalPresentationCapturesStatusBarAppearance = false
+                toController?.navigationController?.setNeedsStatusBarAppearanceUpdate()
                 if let fromController = self.fromController {
                     fromController.view.removeFromSuperview()
                 }
@@ -91,7 +97,14 @@ public class MPPreviewInteractiveTransition: UIPercentDrivenInteractiveTransitio
                     toController?.dismiss(animated: true)
                 }
                 else {
-                    toController?.navigationController?.popViewController(animated: true)
+                    if toController?.navigationController?.viewControllers.first == toController {
+                        toController?.navigationController?.dismiss(animated: true)
+                    }
+                    else {
+                        toController?.navigationController?.popViewController(animated: true)
+                    }
+                    
+                    
                 }
                 
 
@@ -105,6 +118,11 @@ public class MPPreviewInteractiveTransition: UIPercentDrivenInteractiveTransitio
                     imageView.transform  = CGAffineTransform.identity
                     self?.toController?.modalPresentationCapturesStatusBarAppearance = true
                     self?.toController?.setNeedsStatusBarAppearanceUpdate()
+                    
+                    if self?.toController?.navigationController != nil {
+                        self?.toController?.navigationController?.modalPresentationCapturesStatusBarAppearance = false
+                        self?.toController?.navigationController?.setNeedsStatusBarAppearanceUpdate()
+                    }
                 }
                
             }

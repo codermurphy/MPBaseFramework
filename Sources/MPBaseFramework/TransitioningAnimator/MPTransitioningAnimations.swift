@@ -132,8 +132,7 @@ extension MPTransitioningAnimations {
                 switch type {
                 case .presentOrPush:
                     
-                    
-                    
+                    guard let toVC = contextTransitioning.viewController(forKey: .to) else { contextTransitioning.completeTransition(true); return }
                     guard let sourceView = controller.sourceView else { contextTransitioning.completeTransition(true); return }
                     controller.view.isHidden = true
                     let backgroundView = UIView(frame: contextTransitioning.containerView.bounds)
@@ -150,31 +149,37 @@ extension MPTransitioningAnimations {
                     snapshotView.mp_setScaleFitFrame(sourceFrame: originFrame,isPreview: false)
                     
                     contextTransitioning.containerView.addSubview(snapshotView)
+                    
+                    if let superview = sourceView.superview {
+                        superview.isHidden = true
+                    }
+                    else {
+                        sourceView.isHidden = true
+                    }
       
                     
                     UIView.animate(withDuration: duration) { [weak snapshotView,weak sourceView,weak backgroundView] in
                         
                         snapshotView?.mp_setScaleFitFrame(sourceFrame:  contextTransitioning.containerView.frame,isPreview: true)
-                        backgroundView?.backgroundColor = .black
-                        sourceView?.alpha = 0
+                        backgroundView?.backgroundColor = controller.view.backgroundColor
 
                         
                     } completion: { [weak snapshotView,weak backgroundView]_ in
                         
                         backgroundView?.removeFromSuperview()
                         controller.view.isHidden = false
-                        controller.modalPresentationCapturesStatusBarAppearance = true
-                        controller.setNeedsStatusBarAppearanceUpdate()
+                        toVC.modalPresentationCapturesStatusBarAppearance = true
+                        toVC.setNeedsStatusBarAppearanceUpdate()
                         snapshotView?.removeFromSuperview()
                         contextTransitioning.completeTransition(!contextTransitioning.transitionWasCancelled)
                     }
                     
                 case .dismissOrPop:
-
+                    guard let fromVC = contextTransitioning.viewController(forKey: .from) else {contextTransitioning.completeTransition(true) ;return}
                     guard let sourceView = controller.sourceView else { contextTransitioning.completeTransition(true) ;return }
                     guard let currentImageView = controller.currentImageView else { contextTransitioning.completeTransition(true) ;return }
                     let backgroundView = UIView(frame: contextTransitioning.containerView.bounds)
-                    backgroundView.backgroundColor = animationView.backgroundColor
+                    backgroundView.backgroundColor = controller.view.backgroundColor
                     
                     contextTransitioning.containerView.addSubview(backgroundView)
                     
@@ -192,8 +197,8 @@ extension MPTransitioningAnimations {
                 
                     contextTransitioning.containerView.addSubview(snapshotView)
                     
-                    controller.modalPresentationCapturesStatusBarAppearance = false
-                    controller.setNeedsStatusBarAppearanceUpdate()
+                    fromVC.modalPresentationCapturesStatusBarAppearance = false
+                    fromVC.setNeedsStatusBarAppearanceUpdate()
                     controller.view.isHidden = true
                     let resultFrame = sourceView.convert(sourceView.frame, to: contextTransitioning.containerView)
                     
@@ -202,16 +207,19 @@ extension MPTransitioningAnimations {
                         backgroundView?.backgroundColor = .clear
                     } completion: {  [weak snapshotView,weak sourceView,weak backgroundView] _ in
                         
+                        if let superview = sourceView?.superview {
+                            superview.isHidden = false
+                        }
+                        else {
+                            sourceView?.isHidden = false
+                        }
+                        
                         if contextTransitioning.transitionWasCancelled {
                             controller.view.isHidden = false
                             controller.modalPresentationCapturesStatusBarAppearance = true
                             controller.setNeedsStatusBarAppearanceUpdate()
-                            sourceView?.alpha = 0
                         }
-                        else {
-                            sourceView?.alpha = 1
-                        }
-                        
+
                         snapshotView?.removeFromSuperview()
                         backgroundView?.removeFromSuperview()
                         contextTransitioning.completeTransition(!contextTransitioning.transitionWasCancelled )

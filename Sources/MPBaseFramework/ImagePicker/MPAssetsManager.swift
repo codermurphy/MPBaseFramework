@@ -8,6 +8,10 @@
 import UIKit
 import Photos
 
+public struct MPAssetsConfig {
+    
+}
+
 extension UICollectionView {
     func mp_indexPathsForElements(in rect: CGRect) -> [IndexPath] {
         let allLayoutAttributes = collectionViewLayout.layoutAttributesForElements(in: rect)!

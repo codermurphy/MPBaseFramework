@@ -16,8 +16,8 @@ public class MPImagePreviewCell: UICollectionViewCell {
         self.backgroundColor = .clear
         self.contentView.backgroundColor = .clear
 
-        scrollView.delegate = self
 
+        scrollView.delegate = self
         self.contentView.addSubview(scrollView)
         scrollView.addSubview(imageView)
 
@@ -61,6 +61,7 @@ public class MPImagePreviewCell: UICollectionViewCell {
     
     public override func prepareForReuse() {
         super.prepareForReuse()
+        self.contentView.isHidden = false
         imageView.image = nil
         scrollView.setZoomScale(1.0, animated: false)
         scrollView.contentOffset = .zero

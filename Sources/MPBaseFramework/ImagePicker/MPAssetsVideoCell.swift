@@ -1,5 +1,5 @@
 //
-//  MPAssetsPickerVideoCell.swift
+//  MPAssetsVideoCell.swift
 //  
 //
 //  Created by ogawa on 2024/6/4.
@@ -61,7 +61,7 @@ extension TimeInterval {
 }
 
 
-class MPAssetsPickerVideoCell: MPAssetsPickerImageCell,MPAssetsPickerCellVideoCellProtocol {
+class MPAssetsVideoCell: MPAssetsImageCell,MPAssetsPickerCellVideoCellProtocol {
     
     override var asset: PHAsset? {
         didSet {

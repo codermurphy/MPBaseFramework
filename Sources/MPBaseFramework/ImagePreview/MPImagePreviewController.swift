@@ -33,28 +33,30 @@ public class MPImagePreviewController: UIViewController,MPImagePreviewProtocol {
     }
     
     
-    public init(souceView: UIImageView,imags: [UIImage],currentIndex: Int,pageChangeHanlder: ((IndexPath) -> UIImageView?)? = nil) {
+    public init(souceView: UIImageView,imags: [UIImage],currentIndex: Int,isPresent: Bool = true,pageChangeHandle: ((IndexPath) -> UIView?)? = nil) {
         
         super.init(nibName: nil, bundle: nil)
         self.previewType = .imageNames
         self.modalPresentationStyle = .overFullScreen
         self.sourceView = souceView
         self.images = imags
-        self.pageChangeHanlder = pageChangeHanlder
+        self.pageChangeHandle = pageChangeHandle
         self.currentIndex = currentIndex
+        self.isPresent = isPresent
 
     }
     
     
-    public init(souceView: UIImageView,imageNames: [String],currentIndex: Int,pageChangeHanlder: ((IndexPath) -> UIImageView?)? = nil) {
+    public init(souceView: UIImageView,imageNames: [String],currentIndex: Int,isPresent: Bool = true,pageChangeHandle: ((IndexPath) -> UIView?)? = nil) {
         
         super.init(nibName: nil, bundle: nil)
         self.previewType = .imageNames
         self.modalPresentationStyle = .overFullScreen
         self.sourceView = souceView
         self.imageContents = imageNames
-        self.pageChangeHanlder = pageChangeHanlder
+        self.pageChangeHandle = pageChangeHandle
         self.currentIndex = currentIndex
+        self.isPresent = isPresent
 
     }
     
@@ -64,11 +66,9 @@ public class MPImagePreviewController: UIViewController,MPImagePreviewProtocol {
     }
     
     public override func viewDidLoad() {
-        configAnimator()
         super.viewDidLoad()
         self.view.backgroundColor = .black
         
-        // Do any additional setup after loading the view.
         if #available(iOS 11.0, *) {
             contentView.contentInsetAdjustmentBehavior = .never
         } else {
@@ -79,11 +79,14 @@ public class MPImagePreviewController: UIViewController,MPImagePreviewProtocol {
         layout()
         self.contentView.scrollToItem(at: IndexPath(item: currentIndex, section: 0), at: .centeredHorizontally, animated: false)
 
+        configAnimator()
+
+
     }
-        
-    
     
     //MARK: - property
+    
+    public var isPresent: Bool = false
     
     public var previewType: PreviewType = .imageNames
     
@@ -100,94 +103,69 @@ public class MPImagePreviewController: UIViewController,MPImagePreviewProtocol {
     
     public weak var sourceView: UIImageView?
     
-    public var pageChangeHanlder: ((IndexPath) -> UIImageView?)?
+    public var pageChangeHandle: ((IndexPath) -> UIView?)?
     
     public var currentImageView: UIImageView? {
         return (self.contentView.visibleCells.first as? MPImagePreviewCell)?.imageView
+    }
+    
+    public func updateSourceView(view: UIImageView) {
+        self.sourceView?.superview?.isHidden = false
+        self.sourceView = view
+        view.superview?.isHidden = true
     }
         
 
     //MARK: - private methods
     
     public func configAnimator() {
-        let animator = MPControllerAnimator()
-        
-        animator.animation = MPTransitioningAnimations.imagePreview(controller: self).animation
-        let previewInteractive = MPPreviewInteractiveTransition()
-        previewInteractive.prepare(toController: self, fromController: nil)
-        self.proxy = MPPrecentAndDismissTransitiongingProxy(animator: animator,
-                                                  percentDrivenInteractiveTransition: previewInteractive,
-                                                  presentationClass: nil)
-        self.transitioningDelegate = self.proxy
+        if self.isPresent {
+            let animator = MPControllerAnimator()
+            
+            animator.animation = MPTransitioningAnimations.imagePreview(controller: self).animation
+            let previewInteractive = MPPreviewInteractiveTransition()
+            previewInteractive.prepare(toController: self, fromController: nil)
+            self.proxy = MPPrecentAndDismissTransitiongingProxy(animator: animator,
+                                                      percentDrivenInteractiveTransition: previewInteractive,
+                                                      presentationClass: nil)
+            self.transitioningDelegate = self.proxy
+        }
+
         
 
     }
     
     private func addUserInteractive() {
-        if self.navigationController == nil {
-//            let panGesture = UIPanGestureRecognizer(target: self, action: #selector(self.panGestureHandler(gesture:)))
-//            self.view.addGestureRecognizer(panGesture)
-        }
 
-                
         let doubleGesture = UITapGestureRecognizer(target: self, action: #selector(self.doubleGestureHandle(gesture:)))
         doubleGesture.numberOfTapsRequired = 2
         doubleGesture.numberOfTouchesRequired = 1
        self.view.addGestureRecognizer(doubleGesture)
         
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.tapGestureHandler(gesture:)))
-        tapGesture.delegate = self
-        tapGesture.delaysTouchesBegan = true
+        tapGesture.require(toFail: doubleGesture)
+
         self.view.addGestureRecognizer(tapGesture)
+                
+
+
     }
     
     
     //MARK: - user interactive handler
     
-    @objc private func panGestureHandler(gesture: UIPanGestureRecognizer) {
-        
-        switch gesture.state {
-        case .began:
-            self.modalPresentationCapturesStatusBarAppearance = false
-            self.setNeedsStatusBarAppearanceUpdate()
-        case  .changed:
-            let point = gesture.translation(in: gesture.view)
-            guard let imageView = self.contentView.visibleCells.first as? MPImagePreviewCell else { return }
-            let percent = point.y / (self.view.frame.height)
-
-            imageView.transform = CGAffineTransform(a: 1 - abs(percent), b: 0, c: 0, d: 1 - abs(percent), tx: point.x, ty: point.y)
-
-            self.view.backgroundColor = .black.withAlphaComponent(1 - abs(percent))
-        case .ended:
-            guard let imageView = self.contentView.visibleCells.first as? MPImagePreviewCell else { return }
-            let percent = imageView.transform.ty / (self.view.frame.height)
-            if abs(percent) >= 0.2  {
-                self.dismiss(animated: true, completion: nil)
-                
-            }
-            else {
-                UIView.animate(withDuration: 0.2) { [weak self] in
-                    self?.view.backgroundColor = .black
-                    imageView.transform  = CGAffineTransform.identity
-                    self?.modalPresentationCapturesStatusBarAppearance = true
-                    self?.setNeedsStatusBarAppearanceUpdate()
-                }
-            }
-
-            break
-        
-        default:
-            self.modalPresentationCapturesStatusBarAppearance = true
-            self.setNeedsStatusBarAppearanceUpdate()
-        }
-    }
-    
     @objc private func tapGestureHandler(gesture: UITapGestureRecognizer) {
         guard let cell = contentView.visibleCells.first as? MPImagePreviewCell else { return }
         if cell.scrollView.zoomScale == 1.0 {
             
-            if self.navigationController != nil {
-                self.navigationController?.popViewController(animated: true)
+            if let nav = self.navigationController {
+                if nav.topViewController == self && nav.viewControllers.count == 1 {
+                    nav.dismiss(animated: true, completion: nil)
+                }
+                else {
+                    self.navigationController?.popViewController(animated: true)
+                }
+                
             }
             else {
                 self.dismiss(animated: true, completion: nil)
@@ -341,7 +319,7 @@ extension MPImagePreviewController: UICollectionViewDataSource {
 
 //MARK: - UICollectionViewDelegateFlowLayout
 extension MPImagePreviewController: UICollectionViewDelegateFlowLayout {
-    
+        
     public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
         return collectionView.bounds.size
@@ -362,14 +340,8 @@ extension MPImagePreviewController: UICollectionViewDelegateFlowLayout {
 
                 }
                 currentIndex = index
-
-                if let view = pageChangeHanlder?(IndexPath(item: currentIndex, section: 0)) {
-//                    sourceView?.isHidden = false
-                    sourceView?.alpha = 1
-                    sourceView = view
-                    sourceView?.alpha = 0
-//                    sourceView?.isHidden = true
-                }
+                guard let newSourceView = pageChangeHandle?(IndexPath(item: currentIndex, section: 0)) as? UIImageView else { return }
+                self.updateSourceView(view: newSourceView)
             }
         }
     }

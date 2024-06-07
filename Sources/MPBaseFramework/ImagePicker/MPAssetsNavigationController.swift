@@ -8,14 +8,15 @@
 import UIKit
 
 class MPAssetsNavigationController: UINavigationController {
+    
+    private var percentageTransition :MPPreviewInteractiveTransition?
+
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         delegate = self
     }
-    
-    private var percentageTransition :MPPreviewInteractiveTransition?
     
 
 }
@@ -25,7 +26,7 @@ extension MPAssetsNavigationController: UINavigationControllerDelegate {
     
     func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
         if navigationController.viewControllers.count > 1 {
-            if let preview = viewController as? MPImagePreviewController {
+            if let preview = viewController as? MPAssetsPreviewController {
                 let lastController = navigationController.viewControllers[navigationController.viewControllers.count - 2]
                 percentageTransition = MPPreviewInteractiveTransition()
                 percentageTransition?.prepare(toController: preview,fromController: lastController)
@@ -33,6 +34,10 @@ extension MPAssetsNavigationController: UINavigationControllerDelegate {
             else {
                 percentageTransition = nil
             }
+            
+        }
+        else {
+            percentageTransition = nil
         }
         
 
@@ -46,10 +51,7 @@ extension MPAssetsNavigationController: UINavigationControllerDelegate {
         else {
             return nil
         }
-        
-        
-        
-       
+
     }
     
     func navigationController(_ navigationController: UINavigationController, animationControllerFor operation: UINavigationController.Operation, from fromVC: UIViewController, to toVC: UIViewController) -> UIViewControllerAnimatedTransitioning? {
@@ -82,3 +84,4 @@ extension MPAssetsNavigationController: UINavigationControllerDelegate {
         }
     }
 }
+

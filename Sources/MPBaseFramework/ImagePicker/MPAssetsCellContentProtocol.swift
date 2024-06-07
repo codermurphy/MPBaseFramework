@@ -37,6 +37,8 @@ public protocol MPAssetsPickerCellBaseProtocol: UICollectionViewCell {
     
     var isDegraded: Bool { set get}
     
+    var isSingleChoise: Bool { set get}
+    
     var flagView: MPAssetsPickerSelectedFlagProtocol { get}
     
     var delegate: MPAssetsPickerCellDelegate? {set get}
