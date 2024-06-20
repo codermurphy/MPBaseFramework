@@ -32,12 +32,12 @@ class MPAssetsPickerFlagView: UIView,MPAssetsPickerSelectedFlagProtocol {
         if selected {
             selectedIndexLabel.isHidden = false
             self.backgroundColor = .black.withAlphaComponent(0.4)
-            self.selectedView!.isSelected = true
+            self.selectedView!.isTickSelected = true
         }
         else {
             selectedIndexLabel.isHidden = true
             self.backgroundColor = .clear
-            self.selectedView!.isSelected = false
+            self.selectedView!.isTickSelected = false
         }
         
     }

@@ -82,7 +82,10 @@ class MPAssetsVideoCell: MPAssetsImageCell,MPAssetsPickerCellVideoCellProtocol {
         super.init(frame: frame)
         
         self.contentView.addSubview(durationLabel)
-        self.contentView.bringSubviewToFront(self.flagView)
+        if self.flagView != nil {
+            self.contentView.bringSubviewToFront(self.flagView!)
+        }
+       
     }
     
     required init?(coder: NSCoder) {

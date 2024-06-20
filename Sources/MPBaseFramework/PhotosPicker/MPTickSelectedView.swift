@@ -7,7 +7,7 @@
 
 import UIKit
 
-class MPTickSelectedView: UIView,MPTickSelectedProtocol {
+class MPTickSelectedView: UIControl,MPTickSelectedProtocol {
     
     //MARK: - initial
     
@@ -39,16 +39,18 @@ class MPTickSelectedView: UIView,MPTickSelectedProtocol {
         fatalError("init(coder:) has not been implemented")
     }
     
+    
+    
     //MARK: - property
     
     private var _size: CGSize
     
-    var isSelected: Bool = false {
+    var isTickSelected: Bool = false {
         didSet {
             CATransaction.begin()
             CATransaction.setDisableActions(true)
-            selectedLayer.strokeEnd = isSelected ? 1.0 : 0.0
-            selectedLayer.backgroundColor = isSelected ? UIColor.green.cgColor : UIColor.clear.cgColor
+            selectedLayer.strokeEnd = isTickSelected ? 1.0 : 0.0
+            selectedLayer.backgroundColor = isTickSelected ? UIColor.green.cgColor : UIColor.clear.cgColor
             CATransaction.commit()
         }
     }

@@ -53,7 +53,8 @@ public class MPAssetsManager: NSObject {
         
     var currentAlbumsIndex: Int = 0
     
-    private(set) var currenFetchtAssetsResult: PHFetchResult<PHAsset>?
+    
+    private(set) var currentFetchResult: MPAssetsFetchResult?
     
     private var previousPreheatRect: CGRect = .zero
     
@@ -85,7 +86,7 @@ public class MPAssetsManager: NSObject {
         if let first = result.first {
             let allPhotosOptions = PHFetchOptions()
             allPhotosOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-            self.currenFetchtAssetsResult = PHAsset.fetchAssets(in: first, options: allPhotosOptions)
+            self.currentFetchResult = MPAssetsFetchResult(fetchResult: PHAsset.fetchAssets(in: first, options: allPhotosOptions))
         }
 
 
@@ -96,7 +97,7 @@ public class MPAssetsManager: NSObject {
         let allPhotosOptions = PHFetchOptions()
         allPhotosOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         self.currentAlbumsIndex = index
-        self.currenFetchtAssetsResult = PHAsset.fetchAssets(in: selectedAsset, options: allPhotosOptions)
+        self.currentFetchResult = MPAssetsFetchResult(fetchResult: PHAsset.fetchAssets(in: selectedAsset, options: allPhotosOptions))
         self.resetCachedAssets()
 
         return selectedAsset.localizedTitle
@@ -146,7 +147,7 @@ public class MPAssetsManager: NSObject {
         imageOptions.resizeMode = .fast
         imageOptions.isNetworkAccessAllowed = false
         
-        guard let nonilAssets = currenFetchtAssetsResult  else { return }
+        guard let nonilAssets = currentFetchResult?.fetchResult  else { return }
         let visibleRect = CGRect(origin: contentOffset, size: collectionView!.bounds.size)
         let preheatRect = visibleRect.insetBy(dx: 0, dy: -0.5 * visibleRect.height)
         
@@ -218,8 +219,8 @@ public class MPAssetsManager: NSObject {
 
 extension MPAssetsManager: PHPhotoLibraryChangeObserver {
     public func photoLibraryDidChange(_ changeInstance: PHChange) {
-        guard let currenFetchtAssetsResult else { return }
-        guard let changes = changeInstance.changeDetails(for: currenFetchtAssetsResult)
+        guard let currentFetchResult else { return }
+        guard let changes = changeInstance.changeDetails(for: currentFetchResult.fetchResult)
             else { return }
         
         // Change notifications may originate from a background queue.
@@ -227,7 +228,7 @@ extension MPAssetsManager: PHPhotoLibraryChangeObserver {
         // on the change, so you can update the UI.
         DispatchQueue.main.sync {
             // Hang on to the new fetch result.
-            self.currenFetchtAssetsResult = changes.fetchResultAfterChanges
+            self.currentFetchResult?.fetchResult = changes.fetchResultAfterChanges
             // If we have incremental changes, animate them in the collection view.
             if changes.hasIncrementalChanges {
                 guard let collectionView = self.collectionView else { fatalError() }

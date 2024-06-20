@@ -39,7 +39,7 @@ public protocol MPAssetsPickerCellBaseProtocol: UICollectionViewCell {
     
     var isSingleChoise: Bool { set get}
     
-    var flagView: MPAssetsPickerSelectedFlagProtocol { get}
+    var flagView: MPAssetsPickerSelectedFlagProtocol? { get}
     
     var delegate: MPAssetsPickerCellDelegate? {set get}
     
@@ -50,7 +50,7 @@ public protocol MPAssetsPickerCellBaseProtocol: UICollectionViewCell {
     func setSelectedFlag(index: Int,selected: Bool) 
 }
 
-public protocol MPAssetsPickerImageCellProtocol: MPAssetsPickerCellBaseProtocol {
+public protocol MPAssetsPickerThumbnailCellProtocol: MPAssetsPickerCellBaseProtocol {
     
     
 
@@ -104,7 +104,7 @@ public protocol MPAssetsPickerSelectedFlagProtocol: UIView {
 
 public protocol MPTickSelectedProtocol: UIView {
     
-    var isSelected: Bool {set get}
+    var isTickSelected: Bool {set get}
 }
 
 

@@ -94,7 +94,7 @@ public struct MPPopUpControllerStyle {
     public var topAndBottomMargin: CGFloat = 44
         
         
-    public var position: MPTransitioningAnimations.FromDirection = .bottom
+    public var position: MPTransitioningDirectionAnimation.FromDirection = .bottom
     
     public var backgroundColor: UIColor? = .white
     
@@ -146,7 +146,7 @@ public class MPPopUpController: UIViewController {
     
     //MARK: - property
     
-    private var proxy: MPPrecentAndDismissTransitiongingProxy?
+    private var proxy: MPTransitionAnimator?
         
     var style: MPPopUpControllerStyle
     
@@ -196,9 +196,6 @@ public class MPPopUpController: UIViewController {
     
     private func configProxy() {
                 
-        let animator = MPControllerAnimator()
-        
-        animator.animation = MPTransitioningAnimations.fromDirectionAnimaiton(style.position).animation
         
         var percentDriven: MPDirectionPercentInteractiveTransition?
         
@@ -210,10 +207,11 @@ public class MPPopUpController: UIViewController {
         default:
             break;
         }
-    
-        self.proxy = MPPrecentAndDismissTransitiongingProxy(animator: animator,
-                                                  percentDrivenInteractiveTransition: percentDriven,
-                                                  presentationClass: MPPopUpPresentController.self)
+        
+        self.proxy = MPTransitionAnimator(presentationClass: MPPopUpPresentController.self,
+                                          percentDrivenInteractiveTransition: percentDriven,
+                                          animateTransitionDelegate: MPTransitioningDirectionAnimation(direction: style.position))
+
         self.transitioningDelegate = self.proxy
     }
     

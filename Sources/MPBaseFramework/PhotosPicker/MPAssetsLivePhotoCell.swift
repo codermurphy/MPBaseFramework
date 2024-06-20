@@ -13,7 +13,9 @@ class MPAssetsLivePhotoCell: MPAssetsImageCell,MPAssetsPickerLivePhotoCellProtoc
         super.init(frame: frame)
         
         self.contentView.addSubview(liveIcon)
-        self.contentView.bringSubviewToFront(self.flagView)
+        if self.flagView != nil {
+            self.contentView.bringSubviewToFront(self.flagView!)
+        }
     }
     
     required init?(coder: NSCoder) {

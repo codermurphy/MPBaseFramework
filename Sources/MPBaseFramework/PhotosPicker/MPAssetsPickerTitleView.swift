@@ -77,7 +77,7 @@ class MPAssetsPickerTitleView: UIControl {
     
     private let containerView: UIView = {
         let container = UIView()
-        container.backgroundColor = .black.withAlphaComponent(0.5)
+        container.backgroundColor = .white.withAlphaComponent(0.3)
         container.layer.masksToBounds = true
         container.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         container.isUserInteractionEnabled = false

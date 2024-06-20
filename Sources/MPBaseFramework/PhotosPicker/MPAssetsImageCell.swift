@@ -9,7 +9,7 @@ import UIKit
 import Photos
 
 
-class MPAssetsImageCell: UICollectionViewCell,MPAssetsPickerImageCellProtocol {
+class MPAssetsImageCell: UICollectionViewCell,MPAssetsPickerThumbnailCellProtocol {
     
     
     var asset: PHAsset?
@@ -26,7 +26,10 @@ class MPAssetsImageCell: UICollectionViewCell,MPAssetsPickerImageCellProtocol {
     
     var isSingleChoise: Bool = false {
         didSet {
-            flagView.isHidden = isSingleChoise
+            if isSingleChoise {
+                flagView?.removeFromSuperview()
+                flagView = nil
+            }
         }
     }
     
@@ -43,11 +46,12 @@ class MPAssetsImageCell: UICollectionViewCell,MPAssetsPickerImageCellProtocol {
         self.contentView.backgroundColor = .white
         self.contentView.addSubview(imageView)
 
-        self.contentView.addSubview(flagView)
+        if flagView != nil {
+            flagView?.isUserInteractionEnabled = false
+            self.contentView.addSubview(flagView!)
+        }
         
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.tapGestureHandle(gesture:)))
-        tapGesture.delegate = self
-        flagView.addGestureRecognizer(tapGesture)
+
         
         
         
@@ -57,23 +61,7 @@ class MPAssetsImageCell: UICollectionViewCell,MPAssetsPickerImageCellProtocol {
         fatalError("init(coder:) has not been implemented")
     }
     
-    //MARK: - tap gesture handler
-    
-    @objc private func tapGestureHandle(gesture: UIGestureRecognizer) {
-    
-        if !isSelectedAssets {
-            guard let index = delegate?.cellDidSelected(cell: self),index.1 == true else { return }
-            setSelectedFlag(index: index.0,selected: index.1)
-        }
-        else {
-            setSelectedFlag(index: 0,selected: false)
-            delegate?.cellDidUnSelected(cell: self)
-            
-        }
-        
-        
-    }
-    
+
     //MARK: - override methods
     
     override func prepareForReuse() {
@@ -90,7 +78,7 @@ class MPAssetsImageCell: UICollectionViewCell,MPAssetsPickerImageCellProtocol {
     
     func setSelectedFlag(index: Int,selected: Bool) {
         isSelectedAssets = selected
-        flagView.setSelected(index: index,selected: isSelectedAssets)
+        flagView?.setSelected(index: index,selected: isSelectedAssets)
     }
     
     //MARK: - UI
@@ -103,34 +91,16 @@ class MPAssetsImageCell: UICollectionViewCell,MPAssetsPickerImageCellProtocol {
         return imageView
     }()
     
-    let flagView: MPAssetsPickerSelectedFlagProtocol = {
-        let flag = MPAssetsPickerFlagView()
-        return flag
-    }()
+    private(set) var flagView: MPAssetsPickerSelectedFlagProtocol? = MPAssetsPickerFlagView()
 
     
     
     override func layoutSubviews() {
         super.layoutSubviews()
         imageView.frame = self.contentView.bounds
-        flagView.frame = self.contentView.bounds
+        flagView?.frame = self.contentView.bounds
         
     }
 }
 
-extension MPAssetsImageCell: UIGestureRecognizerDelegate {
-    
-    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        
-        let targeRect = CGRect(x: self.contentView.bounds.width - flagView.selectedView!.frame.width - 10, y: 0, width: flagView.selectedView!.frame.width + 10, height: flagView.selectedView!.frame.width + 10)
-        let point = gestureRecognizer.location(in: gestureRecognizer.view)
-        if targeRect.contains(point) {
-            return true
-        }
-        else {
-            return false
-        }
-        
-    }
-}
 

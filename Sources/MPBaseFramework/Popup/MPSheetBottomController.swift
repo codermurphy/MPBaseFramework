@@ -126,7 +126,7 @@ public class MPSheetBottomController: UIViewController {
     
     //MARK: - properyt
     
-    private var proxy: MPPrecentAndDismissTransitiongingProxy?
+    private var proxy: MPTransitionAnimator?
         
     private(set) var style: MPSheetBottomControllerConfig
 
@@ -143,13 +143,12 @@ public class MPSheetBottomController: UIViewController {
     //MARK: - config
     
     private func configAnimator() {
-        let animator = MPControllerAnimator()
+
         
-        animator.animation = MPTransitioningAnimations.sheetBottomAnimation.animation
-    
-        self.proxy = MPPrecentAndDismissTransitiongingProxy(animator: animator,
-                                                  percentDrivenInteractiveTransition: MPDirectionPercentInteractiveTransition(sourceViewController: self,direction: .bottom),
-                                                  presentationClass: MPSheetBottomPresentController.self)
+        self.proxy = MPTransitionAnimator(presentationClass: MPSheetBottomPresentController.self,
+                                          percentDrivenInteractiveTransition: MPDirectionPercentInteractiveTransition(sourceViewController: self,
+                                                                                                                      direction: .bottom),
+                                          animateTransitionDelegate: MPTransitioningDirectionAnimation(direction: .bottom))
         self.transitioningDelegate = self.proxy
     }
     

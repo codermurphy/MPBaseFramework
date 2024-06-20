@@ -27,7 +27,7 @@ public struct MPAssetsUIConfig {
     public var rowCount = 3
     
     /// 可自定义image的cell
-    public var imageCellType: MPAssetsPickerImageCellProtocol.Type = MPAssetsImageCell.self
+    public var imageCellType: MPAssetsPickerThumbnailCellProtocol.Type = MPAssetsImageCell.self
     
     /// 可自定义live photo
     public var livePhotoCellType: MPAssetsPickerLivePhotoCellProtocol.Type = MPAssetsLivePhotoCell.self

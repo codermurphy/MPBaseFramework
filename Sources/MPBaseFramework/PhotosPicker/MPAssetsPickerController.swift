@@ -19,7 +19,7 @@ public class MPAssetsPickerController: UIViewController {
                 
     
     private var imageManager:  MPAssetsManager!
-    
+        
     private var flowLayout: UICollectionViewFlowLayout {
         return self.collectionView.collectionViewLayout as! UICollectionViewFlowLayout
     }
@@ -37,8 +37,6 @@ public class MPAssetsPickerController: UIViewController {
     private weak var albumPicker: MPAlbumsPickerView?
         
     
-    /// 被选中的indexPath
-    private var selectedIndex: [String: Int] = [String: Int]()
     
     public var lastDetailIndexPath: IndexPath?
         
@@ -51,15 +49,12 @@ public class MPAssetsPickerController: UIViewController {
         }
         
     }
-    
-    
-    
+        
     //MARK: - initial
     
     public static func presentImagePicker() -> UINavigationController {
         let picker = MPAssetsPickerController()
-        let nav = MPAssetsNavigationController(rootViewController: picker)
-        nav.modalPresentationStyle = .fullScreen
+        let nav = MPAssetsNavigationController(assets: picker)
         return nav
     }
     
@@ -74,13 +69,14 @@ public class MPAssetsPickerController: UIViewController {
     //MARK: - life cycle
     public override func viewDidLoad() {
         super.viewDidLoad()
-        self.view.backgroundColor = .white
+        self.view.backgroundColor = .black
         configNavigationItem()
+        configToolBarItem()
         setupUI()
         updateItemSizez(size: self.view.bounds.size)
         imageManager = MPAssetsManager(thumbnailSize: thumbnailSize ,collectionView: self.collectionView)
         requestAuthorization()
-
+    
 
     }
     public override func viewDidAppear(_ animated: Bool) {
@@ -159,7 +155,7 @@ public class MPAssetsPickerController: UIViewController {
 
         }
         let closeItem = UIBarButtonItem(image: UIImage(systemName: "xmark"), style: .plain, target: self, action: #selector(self.closeItemClickedHandler(item:)))
-        closeItem.tintColor = .black
+        closeItem.tintColor = .white
         self.navigationItem.leftBarButtonItem = closeItem
 
 
@@ -169,11 +165,25 @@ public class MPAssetsPickerController: UIViewController {
         
         if let first = imageManager.allAlbums.first {
             if self.titleView == nil {
+                
                 let titleView = MPAssetsPickerTitleView(title: first.localizedTitle)
                 titleView.addTarget(self, action: #selector(self.titleViewClickedHandler(titleView:)), for: .touchUpInside)
                 self.navigationItem.titleView = titleView
             }
         }
+    }
+    
+    private func configToolBarItem() {
+        if !MPAssetsUIConfig.share.isSingleChoise {
+            self.navigationController?.isToolbarHidden = false
+            let previewItem = UIBarButtonItem(title: "预览", style: .plain, target: self, action: #selector(Self.previewItemHandle(item:)))
+            self.previewItem = previewItem
+            let flexibleItem = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            let comfirmItem = UIBarButtonItem(title: "确定", style: .plain, target: self, action: #selector(Self.comfirmItemHandle(item:)))
+            
+            self.toolbarItems = [previewItem,flexibleItem,comfirmItem]
+        }
+
     }
     
     private func updateItemSizez(size: CGSize) {
@@ -250,6 +260,18 @@ public class MPAssetsPickerController: UIViewController {
         }
     }
     
+    @objc private func previewItemHandle(item: UIBarButtonItem) {
+        guard let currentFetchResult = imageManager.currentFetchResult else { return }
+        guard currentFetchResult.selectedCount > 0 else { return }
+        guard let indexPath = currentFetchResult.firstIndexPath else { return }
+        guard let cell = self.collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol else { return }
+        showPreviewController(sourceView: cell.imageView, currentIndex: indexPath.item)
+    }
+    
+    @objc private func comfirmItemHandle(item: UIBarButtonItem) {
+        self.dismiss(animated: true)
+    }
+    
     @objc private func titleViewClickedHandler(titleView: MPAssetsPickerTitleView) {
         titleView.isSelected.toggle()
         if titleView.isSelected {
@@ -281,46 +303,71 @@ public class MPAssetsPickerController: UIViewController {
     /// 选中
     /// - Parameter indexPath: indexpath
     /// - Returns: int 当前选中数量，bool 是否选中
-    private func selectedIndexPath(_ indexPath: IndexPath) -> (Int,Bool) {
-        guard selectedIndex.count < MPAssetsUIConfig.share.maxSelectCount else {return (0,false)}
-        guard let asset = imageManager.currenFetchtAssetsResult?[indexPath.row] else { return (0,false) }
-        guard !selectedIndex.keys.contains(asset.localIdentifier) else {return (0,false)}
-        let count = selectedIndex.count + 1
-        selectedIndex[asset.localIdentifier] = count
-        return (count,true)
+    private func selectedIndexPath(_ indexPath: IndexPath)-> (Bool,Int)  {
+        guard let selectedCount = imageManager.currentFetchResult?.selectedCount,
+              selectedCount < MPAssetsUIConfig.share.maxSelectCount else { return (false,0)}
+        guard let identifier = imageManager.currentFetchResult?[indexPath.row].localIdentifier else { return(false,0) }
+        guard let cell = self.collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol else { return (false,0)}
+        
+        imageManager.currentFetchResult?.selectedAsset(identifier: identifier, indexPath: indexPath, thumbnail: cell.imageView.image)
+        
+        previewItem?.title = "预览(\(selectedCount + 1))"
+        return (true,selectedCount + 1)
     }
     
     
     /// 移除选中
     /// - Parameter indexPath: indexpath
     private func removeIndexPath(_ indexPath: IndexPath) {
-        guard let asset = imageManager.currenFetchtAssetsResult?[indexPath.row] else { return  }
-        let result = selectedIndex.sorted(by: { $0.value < $1.value}).map { return $0.key}
-        if let last = result.last,last == asset.localIdentifier  {
-            selectedIndex.removeValue(forKey: last)
-        }
-        else {
-            if let targetIndex = result.firstIndex(where: {$0 == asset.localIdentifier}) {
-                for index in targetIndex..<result.count {
-                    if index == targetIndex {
-                        selectedIndex.removeValue(forKey: result[index])
-                    }
-                    else {
-                        let targetIdentifier = result[index]
-                        if let value = selectedIndex[targetIdentifier] {
-                            selectedIndex[targetIdentifier] = value - 1
-                        }
-                        
-                    }
-                }
+        guard let identifier = imageManager.currentFetchResult?[indexPath.row].localIdentifier else { return  }
+        imageManager.currentFetchResult?.unSelectAsset(identifier: identifier)
+        let visibleCells = self.collectionView.indexPathsForVisibleItems
+        self.collectionView.reloadItems(at: visibleCells)
+        let count = imageManager.currentFetchResult?.selectedCount ?? 0
+        previewItem?.title = count > 0 ? "预览(\(count))" : "预览"
+        
+        
+    }
+    
+    
+    private func showPreviewController(sourceView: UIImageView,currentIndex: Int) {
+        guard let currentFetchResult = imageManager.currentFetchResult else { return }
+        let preview = MPAssetsPreviewController(isPresent: false, sourceView: sourceView, currentIndex: currentIndex, assest: currentFetchResult)
+        
+        preview.currentViewchangeHandle = { [weak self] index in
+            let currentIndexPath = IndexPath(item: index, section: 0)
+            if let cell = self?.collectionView.cellForItem(at: currentIndexPath) as? MPAssetsPickerCellBaseProtocol {
+                self?.lastDetailIndexPath = nil
+                return cell.imageView
             }
-            let visibleCells = self.collectionView.indexPathsForVisibleItems
-            self.collectionView.reloadItems(at: visibleCells)
+            else {
+                self?.lastDetailIndexPath = currentIndexPath
+                self?.collectionView.scrollToItem(at: currentIndexPath, at: .centeredVertically, animated: false)
+                self?.collectionView.reloadItems(at: [currentIndexPath])
+                let cell = self?.collectionView.cellForItem(at: currentIndexPath) as? MPAssetsPickerCellBaseProtocol
+                return  cell?.imageView ?? nil
+            }
         }
+        
+        preview.selectedChangeCallback = { [weak self]isSelected,indexPath in
+            if isSelected {
+                self?.selectedIndexPath(indexPath)
+                self?.collectionView.reloadItems(at: [indexPath])
+            }
+            else {
+                self?.removeIndexPath(indexPath)
+            }
+            
+            
+        }
+        
+        self.navigationController?.pushViewController(preview, animated: true)
     }
     
     
     // MARK: UI
+    
+    private var previewItem: UIBarButtonItem?
     
     private lazy var collectionView: UICollectionView = {
         
@@ -339,7 +386,7 @@ public class MPAssetsPickerController: UIViewController {
         result.backgroundColor = .white
         result.alwaysBounceVertical = true
         result.allowsMultipleSelection = true
-        
+        result.contentInsetAdjustmentBehavior = .never
         result.dataSource = self
         result.delegate = self
         result.register(UICollectionViewCell.self, forCellWithReuseIdentifier: UICollectionViewCell.description())
@@ -360,8 +407,8 @@ public class MPAssetsPickerController: UIViewController {
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         collectionView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor).isActive = true
         collectionView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor).isActive = true
-        collectionView.topAnchor.constraint(equalTo: self.view.topAnchor).isActive = true
-        collectionView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor).isActive = true
+        collectionView.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor).isActive = true
+        collectionView.bottomAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.bottomAnchor).isActive = true
 
     }
     
@@ -388,13 +435,15 @@ public class MPAssetsPickerController: UIViewController {
 extension MPAssetsPickerController: UICollectionViewDataSource {
     
     public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return self.imageManager.currenFetchtAssetsResult?.count ?? 0
+        return self.imageManager.currentFetchResult?.count ?? 0
     }
     
     public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         
         let emptyCell = collectionView.dequeueReusableCell(withReuseIdentifier: UICollectionViewCell.description(), for: indexPath)
-        guard let asset = imageManager.currenFetchtAssetsResult?.object(at: indexPath.item) else {
+        guard let asset = imageManager.currentFetchResult?[indexPath.item],
+              let selectedInfo = imageManager.currentFetchResult?[asset.localIdentifier]
+        else {
             
             return emptyCell
         }
@@ -433,18 +482,13 @@ extension MPAssetsPickerController: UICollectionViewDataSource {
         
         result.cellType = cellType
         
-        result.delegate = self
+//        result.delegate = self
 
         result.imageManger = imageManager
-        
+    
         result.isSingleChoise = MPAssetsUIConfig.share.isSingleChoise
         result.asset = asset
-        if let index = selectedIndex[asset.localIdentifier] {
-            result?.setSelectedFlag(index: index, selected: true)
-        }
-        else {
-            result?.setSelectedFlag(index: 0, selected: false)
-        }
+        result?.setSelectedFlag(index: selectedInfo.index, selected: selectedInfo.isSelected)
         return result
     }
 }
@@ -455,11 +499,8 @@ extension MPAssetsPickerController:UICollectionViewDelegateFlowLayout {
     
     public func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         guard let cell = cell as? MPAssetsPickerCellBaseProtocol else { return }
-//        if isViewLoaded && view.window != nil {
-//
-//        }
         
-        if let asset = imageManager.currenFetchtAssetsResult?.object(at: indexPath.item) {
+        if let asset = imageManager.currentFetchResult?[indexPath.item] {
             cell.imageRequestID = imageManager.requestImage(asset: asset) { [weak cell] asset, image,isDegraded in
                 if let image,let cellAssetsIdentifier = cell?.asset?.localIdentifier,asset.localIdentifier == cellAssetsIdentifier {
                     cell?.imageView.image = image
@@ -472,32 +513,22 @@ extension MPAssetsPickerController:UICollectionViewDelegateFlowLayout {
     
     public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: false)
-        guard let cell = collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol else { return }
-        guard let nonilAssets = self.imageManager.currenFetchtAssetsResult else { return }
-        let preView = MPAssetsPreviewController(souceView: cell.imageView,
-                                                assets: nonilAssets,
-                                                currentIndex: indexPath.row) { [weak self] indexPath in
-
-
-
-            
-            if let cell = self?.collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol {
-                self?.lastDetailIndexPath = nil
-                return cell.imageView
+        if MPAssetsUIConfig.share.isSingleChoise {
+            guard let cell = collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol else  { return }
+            showPreviewController(sourceView: cell.imageView, currentIndex: indexPath.item)
+        }
+        else {
+            guard let cell = collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol else { return }
+            if !cell.isSelectedAssets {
+                let result = selectedIndexPath(indexPath)
+                cell.setSelectedFlag(index: result.1, selected: result.0)
+                
             }
             else {
-                self?.lastDetailIndexPath = indexPath
-
-                self?.collectionView.scrollToItem(at: indexPath, at: .centeredVertically, animated: false)
-                self?.collectionView.reloadItems(at: [indexPath])
-                let cell = self?.collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol
-                return  cell?.imageView ?? nil
+                removeIndexPath(indexPath)
+                cell.setSelectedFlag(index: 0, selected: false)
             }
-           
         }
-        self.navigationController?.pushViewController(preView, animated: true)
-
-
     }
     
     public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
@@ -515,23 +546,3 @@ extension MPAssetsPickerController:UICollectionViewDelegateFlowLayout {
     }
     
 }
-
-
-//MARK: - MPImagePickerCellDelegate
-extension MPAssetsPickerController: MPAssetsPickerCellDelegate {
-    
-    public func cellDidSelected(cell: UICollectionViewCell) -> (Int,Bool) {
-        guard let indexPath = self.collectionView.indexPath(for: cell) else { return (0,false)}
-
-        return selectedIndexPath(indexPath)
-    }
-    
-    public func cellDidUnSelected(cell: UICollectionViewCell) {
-        guard let indexPath = self.collectionView.indexPath(for: cell) else { return }
-
-        removeIndexPath(indexPath)
-    }
-    
-
-}
-
