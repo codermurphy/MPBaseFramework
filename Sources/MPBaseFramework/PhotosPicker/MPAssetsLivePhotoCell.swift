@@ -11,7 +11,8 @@ class MPAssetsLivePhotoCell: MPAssetsImageCell,MPAssetsPickerLivePhotoCellProtoc
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        
+        liveIcon.contentMode = .scaleAspectFit
+        liveIcon.tintColor = .white
         self.contentView.addSubview(liveIcon)
         if self.flagView != nil {
             self.contentView.bringSubviewToFront(self.flagView!)
@@ -23,7 +24,7 @@ class MPAssetsLivePhotoCell: MPAssetsImageCell,MPAssetsPickerLivePhotoCellProtoc
     }
     
     
-    let liveIcon: UIImageView =  UIImageView(image: UIImage(named: "live_photo_icon",in: Bundle.module,compatibleWith: nil))
+    let liveIcon: UIImageView =  UIImageView(image: UIImage(systemName: "livephoto"))
     
     override func layoutSubviews() {
         super.layoutSubviews()

@@ -170,7 +170,6 @@ public class MPGalleryPreviewController<View: UIView,Resource: MPGalleryResource
     //MARK: - UICollectionViewDelegateFlowLayout
     
     public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let frame = collectionView.frame
         return collectionView.bounds.size
     }
     
@@ -209,7 +208,7 @@ public class MPGalleryPreviewController<View: UIView,Resource: MPGalleryResource
             let index = Int(round(point.x / scrollView.bounds.width))
             if index != currentIndex {
                 _currentIndex = index
-                currentViewchangeHandle?(currentIndex)
+                let _ = currentViewchangeHandle?(currentIndex)
             }
         }
     }

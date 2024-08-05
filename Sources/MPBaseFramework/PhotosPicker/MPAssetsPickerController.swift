@@ -264,8 +264,14 @@ public class MPAssetsPickerController: UIViewController {
         guard let currentFetchResult = imageManager.currentFetchResult else { return }
         guard currentFetchResult.selectedCount > 0 else { return }
         guard let indexPath = currentFetchResult.firstIndexPath else { return }
-        guard let cell = self.collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol else { return }
-        showPreviewController(sourceView: cell.imageView, currentIndex: indexPath.item)
+        if let cell = self.collectionView.cellForItem(at: indexPath) as? MPAssetsPickerCellBaseProtocol {
+            showPreviewController(sourceView: cell.imageView, currentIndex: indexPath.item)
+        }
+        else {
+            guard let cell = self.collectionView.visibleCells.first as? MPAssetsPickerCellBaseProtocol else { return }
+            showPreviewController(sourceView: cell.imageView, currentIndex: indexPath.item)
+        }
+        
     }
     
     @objc private func comfirmItemHandle(item: UIBarButtonItem) {
@@ -303,6 +309,7 @@ public class MPAssetsPickerController: UIViewController {
     /// 选中
     /// - Parameter indexPath: indexpath
     /// - Returns: int 当前选中数量，bool 是否选中
+    @discardableResult
     private func selectedIndexPath(_ indexPath: IndexPath)-> (Bool,Int)  {
         guard let selectedCount = imageManager.currentFetchResult?.selectedCount,
               selectedCount < MPAssetsUIConfig.share.maxSelectCount else { return (false,0)}

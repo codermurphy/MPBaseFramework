@@ -149,7 +149,20 @@ public class MPAssetsPreviewController: MPGalleryPreviewController<UIImageView,M
         tickSelectedView.isTickSelected = info.isSelected
         tickSelectedView.addTarget(self, action: #selector(Self.selectedItemChangeHandle(item:)), for: .touchUpInside)
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: tickSelectedView)
+        
+        configToolBarItems()
 
+    }
+    
+    private func configToolBarItems() {
+        
+        let editItem = UIBarButtonItem(title: "编辑", style: .plain, target: self, action: #selector(Self.editItemHandle(item:)))
+        
+        let flexiableItem = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        
+        let completionItem = UIBarButtonItem(title: "完成", style: .plain, target: self, action: #selector(Self.completionItemHandle(item:)))
+        
+        self.toolbarItems = [editItem,flexiableItem,completionItem]
     }
     
     // MARK: user interactive
@@ -168,6 +181,17 @@ public class MPAssetsPreviewController: MPGalleryPreviewController<UIImageView,M
             guard let info = self.assets.assetSelects[identifier] else { return }
             selectedPreview.addAssets(identifier: identifier, info: info)
         }
+    }
+    
+    @objc private func completionItemHandle(item: UIBarButtonItem) {
+        
+        self.navigationController?.popViewController(animated: true)
+    }
+    
+    @objc private func editItemHandle(item: UIBarButtonItem) {
+        guard let img = currentView?.image else { return }
+        let editor = MPAssetsEditorController(image: img)
+        self.present(editor, animated: true)
     }
     
     
@@ -230,7 +254,7 @@ public class MPAssetsPreviewController: MPGalleryPreviewController<UIImageView,M
     }
     
     public override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard let cell = collectionView.cellForItem(at: indexPath) as? MPAssetsPrevivewCell else { return }
+//        guard let cell = collectionView.cellForItem(at: indexPath) as? MPAssetsPrevivewCell else { return }
         isHideStatusBar.toggle()
         isHideNavigationBar.toggle()
         

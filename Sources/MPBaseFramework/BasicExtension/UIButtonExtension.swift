@@ -40,22 +40,41 @@ extension UIButton {
                 let font = titleLabel?.font
                 else { return }
             let titleSize = text.size(withAttributes: [.font: font])
-            let maxWidth = max(imageSize.width, titleSize.width)
-            let topOffset = abs((imageSize.height - titleSize.height) * 0.5)
-            if maxWidth == imageSize.width {
-                let centerX = imageSize.width * 0.5
-                titleEdgeInsets = UIEdgeInsets(top: imageSize.height + spacing - topOffset, left: -(centerX + titleSize.width * 0.5), bottom: -(imageSize.height + spacing - topOffset), right: centerX + titleSize.width * 0.5)
-                contentEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: imageSize.height + spacing - topOffset * 2, right: -titleSize.width)
-            }
-            else {
-                let centerX = titleSize.width * 0.5
-                imageEdgeInsets = UIEdgeInsets(top: 0, left: centerX - imageSize.width * 0.5, bottom: 0, right: 0)
-                titleEdgeInsets = UIEdgeInsets(top: imageSize.height + spacing - topOffset, left: -imageSize.width, bottom: -(imageSize.height + spacing - topOffset), right: imageSize.width)
-                contentEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: imageSize.height + spacing - topOffset * 2, right: -imageSize.width)
-            }
+            let originContentWidth = imageSize.width + titleSize.width
+            let originContentHeight = max(imageSize.height, titleSize.height)
+            let newContentWidth = max(imageSize.width,titleSize.width)
+            let newContentHeight = imageSize.height + titleSize.height + spacing
+            let diff_width = newContentWidth - originContentWidth
+            let diff_height = newContentHeight - originContentHeight
+            let diff_image_height = newContentHeight - imageSize.height
+            let diff_title_height = newContentHeight - titleSize.height
+
+
+            contentEdgeInsets = UIEdgeInsets(top: diff_height / 2 , left: diff_width / 2, bottom: diff_height / 2, right: diff_width / 2)
+            titleEdgeInsets = UIEdgeInsets(top: diff_title_height, left:  -imageSize.width, bottom: 0, right: 0)
+            imageEdgeInsets = UIEdgeInsets(top: -diff_image_height, left:-diff_width * 0.5 + (newContentWidth - imageSize.width) * 0.5 , bottom: 0, right: 0)
+
             
         case .bottom:
-            break
+            guard
+                let imageSize = self.currentImage?.size,
+                let text = self.currentTitle,
+                let font = titleLabel?.font
+                else { return }
+            
+            let titleSize = text.size(withAttributes: [.font: font])
+            let originContentWidth = imageSize.width + titleSize.width
+            let originContentHeight = max(imageSize.height, titleSize.height)
+            let newContentWidth = max(imageSize.width,titleSize.width)
+            let newContentHeight = imageSize.height + titleSize.height + spacing
+            let diff_width = newContentWidth - originContentWidth
+            let diff_height = (newContentHeight - originContentHeight)
+            let diff_image_height = newContentHeight - imageSize.height
+            let diff_title_height = newContentHeight - titleSize.height
+            contentEdgeInsets = UIEdgeInsets(top: diff_height / 2 , left: diff_width / 2, bottom: diff_height / 2, right: diff_width / 2)
+            titleEdgeInsets = UIEdgeInsets(top: -diff_title_height, left:  -imageSize.width, bottom: 0, right: 0)
+            imageEdgeInsets = UIEdgeInsets(top: 0, left:-diff_width * 0.5 + (newContentWidth - imageSize.width) * 0.5 , bottom: -diff_image_height, right: 0)
+            
         }
     }
 

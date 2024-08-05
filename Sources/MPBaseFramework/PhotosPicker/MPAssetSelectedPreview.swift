@@ -75,7 +75,6 @@ class MPAssetSelectedPreview: UIView {
     
     func updateCurrentIndex(identifier: String) {
         if let index = identifiers.firstIndex(of: identifier) {
-            let indexPath = IndexPath(item: index, section: 0)
             currentIndex = index
             collectionView.reloadItems(at: collectionView.indexPathsForVisibleItems)
         }

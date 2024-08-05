@@ -67,7 +67,6 @@ public class MPGalleryPreviewDetailBaseCell: UICollectionViewCell,MPGalleryPrevi
     
     @objc private func tapGestureHandle(gesture: UIGestureRecognizer) {
         guard let collectionView = self.superview as? UICollectionView else { return }
-        let point = gesture.location(in: self.contentView)
         guard let indexPath = collectionView.indexPath(for: self) else { return }
         collectionView.delegate?.collectionView?(collectionView, didSelectItemAt: indexPath)
     }
